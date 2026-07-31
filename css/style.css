@@ -242,6 +242,25 @@ body::after {
   border-radius: 1px;
 }
 
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nav-login {
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  padding: 10px 8px;
+  transition: color 0.3s;
+}
+
+.nav-login:hover {
+  color: var(--accent);
+}
+
 .nav-cta {
   background: var(--accent);
   color: #000;
@@ -1462,6 +1481,16 @@ body::after {
 }
 
 @media (max-width: 520px) {
+  .nav-login {
+    font-size: 11px;
+    padding: 8px 4px;
+  }
+
+  .nav-cta {
+    padding: 8px 14px;
+    font-size: 11px;
+  }
+
   .yt-network {
     padding: 64px 6vw;
   }
