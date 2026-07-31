@@ -416,7 +416,7 @@ function createLogoCards(column, data) {
     const card = document.createElement('div');
     card.className = 'platform-logo-card';
     card.innerHTML = `
-      <img src="dsp-logos/${logo.file}" alt="${logo.name}">
+      <img src="https://cms.karharimedia.com/images/dsp/${logo.file}" alt="${logo.name}">
       <span>${logo.name}</span>
     `;
     column.appendChild(card);
@@ -483,3 +483,251 @@ gsap.from('.platforms-scroll-wrapper', {
   delay: 0.2,
   ease: 'power3.out'
 });
+
+// ============================================
+// YOUTUBE NETWORK SECTION (diagram + connectors + stats)
+// ============================================
+(function () {
+  const diagram = document.getElementById('ytDiagram');
+  if (!diagram) return;
+
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const svg = document.getElementById('ytConnectors');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const connections = [
+    { from: 'entertainment', fromEdge: 'bottom', to: 'cms', toEdge: 'top', type: 'straight' },
+    { from: 'musicClub', fromEdge: 'right', to: 'cms', toEdge: 'leftUpper', type: 'hvh' },
+    { from: 'bhaktiSagar', fromEdge: 'left', to: 'cms', toEdge: 'rightUpper', type: 'hvh' },
+    { from: 'aaravFilms', fromEdge: 'top', to: 'cms', toEdge: 'bottomLeft', type: 'vhv' },
+    { from: 'kidsWorld', fromEdge: 'top', to: 'cms', toEdge: 'bottomRight', type: 'vhv' }
+  ];
+
+  let pulseTweens = [];
+  const STUB = 16;
+  const CORNER_R = 6;
+  let mainWires = [];
+
+  function edgePoint(el, edge, containerRect) {
+    const r = el.getBoundingClientRect();
+    const x0 = r.left - containerRect.left;
+    const y0 = r.top - containerRect.top;
+    const cx = x0 + r.width / 2;
+    const cy = y0 + r.height / 2;
+    switch (edge) {
+      case 'left': return { x: x0, y: cy };
+      case 'right': return { x: x0 + r.width, y: cy };
+      case 'top': return { x: cx, y: y0 };
+      case 'bottom': return { x: cx, y: y0 + r.height };
+      case 'leftUpper': return { x: x0, y: y0 + r.height * 0.32 };
+      case 'rightUpper': return { x: x0 + r.width, y: y0 + r.height * 0.32 };
+      case 'bottomLeft': return { x: x0 + r.width * 0.28, y: y0 + r.height };
+      case 'bottomRight': return { x: x0 + r.width * 0.72, y: y0 + r.height };
+    }
+  }
+
+  function roundedPolyline(pts, r) {
+    if (pts.length < 2) return '';
+    let d = 'M ' + pts[0].x + ' ' + pts[0].y;
+    for (let i = 1; i < pts.length - 1; i += 1) {
+      const prev = pts[i - 1];
+      const cur = pts[i];
+      const next = pts[i + 1];
+      const v1x = cur.x - prev.x;
+      const v1y = cur.y - prev.y;
+      const len1 = Math.hypot(v1x, v1y) || 1;
+      const v2x = next.x - cur.x;
+      const v2y = next.y - cur.y;
+      const len2 = Math.hypot(v2x, v2y) || 1;
+      const rr = Math.min(r, len1 / 2, len2 / 2);
+      const a = { x: cur.x - (v1x / len1) * rr, y: cur.y - (v1y / len1) * rr };
+      const b = { x: cur.x + (v2x / len2) * rr, y: cur.y + (v2y / len2) * rr };
+      d += ' L ' + a.x + ' ' + a.y + ' Q ' + cur.x + ' ' + cur.y + ' ' + b.x + ' ' + b.y;
+    }
+    const last = pts[pts.length - 1];
+    d += ' L ' + last.x + ' ' + last.y;
+    return d;
+  }
+
+  function routePoints(p1, p2, type) {
+    if (type === 'straight') return [p1, p2];
+    if (type === 'hvh') {
+      const sx = p2.x >= p1.x ? 1 : -1;
+      const cornerA = { x: p1.x + sx * STUB, y: p1.y };
+      const cornerB = { x: cornerA.x, y: p2.y };
+      return [p1, cornerA, cornerB, p2];
+    }
+    if (type === 'vhv') {
+      const sy = p2.y >= p1.y ? 1 : -1;
+      const cA = { x: p1.x, y: p1.y + sy * STUB };
+      const cB = { x: p2.x, y: cA.y };
+      return [p1, cA, cB, p2];
+    }
+  }
+
+  function addDefs() {
+    const defs = document.createElementNS(NS, 'defs');
+    defs.innerHTML =
+      '<linearGradient id="ytWireGradient" x1="0%" y1="0%" x2="100%" y2="0%">' +
+      '<stop offset="0%" stop-color="#eaa12c" stop-opacity="0.35"/>' +
+      '<stop offset="100%" stop-color="#f4c667" stop-opacity="0.85"/>' +
+      '</linearGradient>';
+    svg.appendChild(defs);
+  }
+
+  function refreshPulses() {
+    pulseTweens.forEach((t) => t.kill());
+    pulseTweens = [];
+    if (reduceMotion) return;
+    mainWires.forEach((w) => {
+      w.pulse.style.opacity = 1;
+      const tw = gsap.to(w.pulse, {
+        motionPath: { path: w.path, align: w.path, alignOrigin: [0.5, 0.5] },
+        duration: 2.4,
+        repeat: -1,
+        delay: w.delay,
+        ease: 'power1.inOut'
+      });
+      pulseTweens.push(tw);
+    });
+  }
+
+  function render(initial) {
+    const containerRect = diagram.getBoundingClientRect();
+    svg.setAttribute('viewBox', '0 0 ' + containerRect.width + ' ' + containerRect.height);
+    svg.setAttribute('width', containerRect.width);
+    svg.setAttribute('height', containerRect.height);
+    svg.innerHTML = '';
+    addDefs();
+    mainWires = [];
+
+    connections.forEach((c, i) => {
+      const fromEl = document.querySelector('[data-node="' + c.from + '"]');
+      const toEl = document.querySelector('[data-node="' + c.to + '"]');
+      if (!fromEl || !toEl) return;
+      const p1 = edgePoint(fromEl, c.fromEdge, containerRect);
+      const p2 = edgePoint(toEl, c.toEdge, containerRect);
+      const pts = routePoints(p1, p2, c.type);
+      const d = roundedPolyline(pts, CORNER_R);
+
+      const path = document.createElementNS(NS, 'path');
+      path.setAttribute('d', d);
+      path.setAttribute('class', 'yt-wire');
+      svg.appendChild(path);
+
+      pts.forEach((pt) => {
+        const dot = document.createElementNS(NS, 'circle');
+        dot.setAttribute('cx', pt.x);
+        dot.setAttribute('cy', pt.y);
+        dot.setAttribute('r', 2.2);
+        dot.setAttribute('class', 'yt-node-dot');
+        svg.appendChild(dot);
+      });
+
+      const pulse = document.createElementNS(NS, 'circle');
+      pulse.setAttribute('r', 3.2);
+      pulse.setAttribute('class', 'yt-pulse-dot');
+      pulse.style.opacity = 0;
+      svg.appendChild(pulse);
+
+      mainWires.push({ path: path, pulse: pulse, delay: i * 0.3 });
+    });
+
+    if (initial) animateEntrance();
+    else refreshPulses();
+  }
+
+  function animateEntrance() {
+    const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+
+    tl.to('.yt-eyebrow', { opacity: 1, duration: 0.5 }, 0)
+      .fromTo('.yt-eyebrow', { y: 14 }, { y: 0, duration: 0.5 }, 0)
+      .to('.yt-headline', { opacity: 1, duration: 0.6 }, 0.08)
+      .fromTo('.yt-headline', { y: 18 }, { y: 0, duration: 0.6 }, 0.08)
+      .to('.yt-lead', { opacity: 1, duration: 0.6 }, 0.18)
+      .fromTo('.yt-lead', { y: 16 }, { y: 0, duration: 0.6 }, 0.18)
+      .to('.yt-cta', { opacity: 1, duration: 0.6 }, 0.28)
+      .fromTo('.yt-cta', { y: 14 }, { y: 0, duration: 0.6 }, 0.28);
+
+    tl.to('.yt-card', { opacity: 1, duration: 0.55, stagger: 0.09 }, 0.2)
+      .fromTo('.yt-card', { y: 16 }, { y: 0, duration: 0.55, stagger: 0.09 }, 0.2)
+      .to('.yt-node--cms', { opacity: 1, duration: 0.5, scale: 1 }, 0.55)
+      .fromTo('.yt-node--cms', { scale: 0.7 }, { scale: 1, duration: 0.6, ease: 'back.out(1.7)' }, 0.55);
+
+    tl.add(function () {
+      mainWires.forEach(function (w, i) {
+        const len = w.path.getTotalLength();
+        w.path.style.strokeDasharray = len;
+        w.path.style.strokeDashoffset = len;
+        gsap.to(w.path, {
+          strokeDashoffset: 0,
+          duration: 0.8,
+          ease: 'power2.inOut',
+          delay: i * 0.08,
+          onComplete: i === mainWires.length - 1 ? refreshPulses : null
+        });
+      });
+      gsap.fromTo('.yt-node-dot', { opacity: 0 }, { opacity: 1, duration: 0.4, delay: 0.6 });
+    }, 0.75);
+
+    tl.to('.yt-stat-card', { opacity: 1, duration: 0.55, stagger: 0.08 }, 0.5)
+      .fromTo('.yt-stat-card', { y: 16 }, { y: 0, duration: 0.55, stagger: 0.08 }, 0.5);
+
+    if (!reduceMotion) {
+      gsap.to('.yt-cms-icon', {
+        boxShadow: '0 0 0 1px rgba(255,255,255,0.08) inset, 0 0 34px 4px rgba(255,80,80,0.55)',
+        duration: 1.6,
+        repeat: -1,
+        yoyo: true,
+        ease: 'sine.inOut'
+      });
+    }
+
+    document.querySelectorAll('.yt-stat-card').forEach(function (card) {
+      const target = parseInt(card.getAttribute('data-target'), 10);
+      const numEl = card.querySelector('.yt-stat-number');
+      const counter = { val: 0 };
+      gsap.to(counter, {
+        val: target,
+        duration: 1.6,
+        delay: 1.1,
+        ease: 'power2.out',
+        onUpdate: function () {
+          numEl.textContent = Math.round(counter.val).toLocaleString('en-US') + '+';
+        }
+      });
+    });
+  }
+
+  function init() {
+    // Play the whole entrance (cards, wires, and number counters)
+    // when the section scrolls into view, instead of on page load.
+    const section = diagram.closest('.yt-network') || diagram;
+    gsap.set(section, { opacity: 0 });
+    gsap.to(section, {
+      opacity: 1,
+      duration: 0.4,
+      ease: 'power1.out',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top 80%',
+        once: true,
+        onEnter: function () {
+          render(true);
+        }
+      }
+    });
+  }
+
+  if (document.fonts && document.fonts.ready) {
+    document.fonts.ready.then(init);
+  } else {
+    init();
+  }
+
+  let resizeTimer;
+  window.addEventListener('resize', function () {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(function () { render(false); }, 200);
+  });
+})();
