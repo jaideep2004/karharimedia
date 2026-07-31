@@ -849,13 +849,13 @@ body::after {
 .all-platforms {
   position: relative;
   z-index: 1;
-  padding: 100px 0;
+  padding: 90px 0px 0px;
 }
 
 .platforms-container {
-  max-width: 1280px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 0 40px;
+  /* padding: 0 40px; */
   display: grid;
   grid-template-columns: 1fr 1.4fr;
   gap: 60px;
@@ -1056,9 +1056,6 @@ body::after {
    YOUTUBE NETWORK SECTION
    ============================================ */
 .yt-network {
-  --yt-bg-0: #05070d;
-  --yt-bg-1: #080c16;
-  --yt-bg-2: #0b101c;
   --yt-card-bg: linear-gradient(180deg, rgba(255,255,255,0.035), rgba(255,255,255,0.015));
   --yt-card-border: rgba(234,161,44,0.16);
   --yt-card-border-hover: rgba(234,161,44,0.45);
@@ -1070,8 +1067,6 @@ body::after {
   --yt-blue: #4f8cff;
   --yt-violet: #9b6bff;
   --yt-text-0: #ffffff;
-  --yt-text-1: #ffffff;
-  --yt-text-2: #ffffff;
   --yt-font-display: 'Sora', sans-serif;
   --yt-font-body: 'DM Sans', sans-serif;
 
@@ -1080,32 +1075,16 @@ body::after {
   min-height: 100vh;
   display: flex;
   align-items: center;
-  padding: 96px 5vw;
-  background:
-    radial-gradient(ellipse 60% 50% at 78% 30%, rgba(234,161,44,0.06), transparent 60%),
-    radial-gradient(ellipse 50% 60% at 15% 75%, rgba(79,140,255,0.05), transparent 60%),
-    linear-gradient(180deg, var(--yt-bg-0), var(--yt-bg-1) 45%, var(--yt-bg-0));
+  padding: clamp(90px, 12vh, 130px) 5vw;
   font-family: var(--yt-font-body);
   -webkit-font-smoothing: antialiased;
-}
-
-.yt-bg-grid {
-  position: absolute;
-  inset: 0;
-  background-image:
-    linear-gradient(rgba(255,255,255,0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.025) 1px, transparent 1px);
-  background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 0%, transparent 75%);
-  mask-image: radial-gradient(ellipse 80% 70% at 50% 50%, black 0%, transparent 75%);
-  pointer-events: none;
 }
 
 .yt-network__inner {
   position: relative;
   z-index: 1;
   width: 100%;
-  max-width: 1380px;
+  max-width: 1350px;
   margin: 0 auto;
   display: grid;
   grid-template-columns: 0.92fr 1.28fr 0.85fr;
@@ -1473,6 +1452,10 @@ body::after {
 @media (max-width: 520px) {
   .yt-network {
     padding: 64px 6vw;
+  }
+
+  .all-platforms {
+    padding: 64px 0;
   }
 
   .yt-card {

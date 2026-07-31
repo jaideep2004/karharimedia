@@ -131,8 +131,8 @@ icons.forEach((icon, i) => {
 
 // ============================================
 // HERO ENERGY BACKGROUND (canvas)
-// Faded, slow streaks + rising particles + twinkling stars.
-// Optimized: DPR cap, pre-rendered glow sprite, pauses when
+// Faded, slow blurred blobs + twinkling stars.
+// Optimized: DPR cap, pre-rendered glow sprites, pauses when
 // tab hidden or hero off-screen, reduced-motion aware.
 // ============================================
 function initHeroParticles() {
@@ -149,109 +149,61 @@ function initHeroParticles() {
   let running = true;
   let rafId = 0;
 
-  // --- Pre-rendered glow sprite (avoids per-particle shadowBlur) ---
-  const spriteSize = 48;
-  const glowSprite = document.createElement('canvas');
-  glowSprite.width = spriteSize;
-  glowSprite.height = spriteSize;
-  {
-    const sctx = glowSprite.getContext('2d');
+  // --- Pre-rendered glow sprites (avoids per-blob shadowBlur) ---
+  const spriteSize = 96;
+  function makeGlowSprite(r, g, b) {
+    const sprite = document.createElement('canvas');
+    sprite.width = spriteSize;
+    sprite.height = spriteSize;
+    const sctx = sprite.getContext('2d');
     const grad = sctx.createRadialGradient(spriteSize / 2, spriteSize / 2, 0, spriteSize / 2, spriteSize / 2, spriteSize / 2);
-    grad.addColorStop(0, 'rgba(255,255,255,1)');
-    grad.addColorStop(0.25, 'rgba(255,255,255,0.45)');
-    grad.addColorStop(1, 'rgba(255,255,255,0)');
+    grad.addColorStop(0, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(0.35, `rgba(${r},${g},${b},0.5)`);
+    grad.addColorStop(1, `rgba(${r},${g},${b},0)`);
     sctx.fillStyle = grad;
     sctx.fillRect(0, 0, spriteSize, spriteSize);
+    return sprite;
   }
+  const goldSprite = makeGlowSprite(255, 205, 60);
+  const purpleSprite = makeGlowSprite(150, 90, 255);
 
-  // --- Faded, slow flowing streaks ---
-  const streaks = [];
-  class EnergyStreak {
+  // --- Faded, slow drifting blurred blobs ---
+  const blobs = [];
+  class EnergyBlob {
     constructor() {
       this.reset();
     }
     reset() {
       this.x = Math.random() * grid.width;
       this.y = Math.random() * grid.height;
-      this.length = 140 + Math.random() * 320;
-      this.speed = 0.16 + Math.random() * 0.38;
-      this.angle = Math.random() * Math.PI * 2;
-      this.life = 0;
-      this.maxLife = 500 + Math.random() * 400;
-      this.color = Math.random() > 0.5 ? '255,208,0' : '150,90,255';
-      this.wave = Math.random() * Math.PI * 2;
+      this.radius = 60 + Math.random() * 130;
+      this.vx = (Math.random() - 0.5) * 0.22;
+      this.vy = (Math.random() - 0.5) * 0.22;
+      this.sprite = Math.random() > 0.45 ? goldSprite : purpleSprite;
+      this.baseAlpha = 0.10 + Math.random() * 0.16;
+      this.phase = Math.random() * Math.PI * 2;
+      this.pulseSpeed = 0.4 + Math.random() * 0.7;
     }
     update() {
-      this.life += 1;
-      this.angle += 0.0004;
-      this.x += Math.cos(this.angle) * this.speed;
-      this.y += Math.sin(this.angle) * this.speed;
-      if (this.life > this.maxLife) this.reset();
+      this.x += this.vx;
+      this.y += this.vy;
+      if (this.x < -this.radius) this.x = grid.width + this.radius;
+      if (this.x > grid.width + this.radius) this.x = -this.radius;
+      if (this.y < -this.radius) this.y = grid.height + this.radius;
+      if (this.y > grid.height + this.radius) this.y = -this.radius;
     }
     draw(now) {
-      context.save();
-      context.lineWidth = 1.4;
-      context.lineCap = 'round';
-      const grad = context.createLinearGradient(
-        this.x, this.y,
-        this.x + Math.cos(this.angle) * this.length,
-        this.y + Math.sin(this.angle) * this.length
-      );
-      grad.addColorStop(0, `rgba(${this.color},0)`);
-      grad.addColorStop(0.25, `rgba(${this.color},0.07)`);
-      grad.addColorStop(0.5, `rgba(${this.color},0.22)`);
-      grad.addColorStop(1, `rgba(${this.color},0)`);
-      context.strokeStyle = grad;
-      context.shadowColor = `rgb(${this.color})`;
-      context.shadowBlur = 12;
-      context.beginPath();
-      context.moveTo(this.x, this.y);
-      for (let i = 1; i < 6; i += 1) {
-        const t = i / 6;
-        const px = this.x + Math.cos(this.angle) * this.length * t
-          + Math.sin(now / 1000 + i * 1.4 + this.wave) * 12;
-        const py = this.y + Math.sin(this.angle) * this.length * t
-          + Math.cos(now / 1200 + i * 1.4 + this.wave) * 12;
-        context.lineTo(px, py);
-      }
-      context.stroke();
-      context.restore();
-    }
-  }
-  for (let i = 0; i < 11; i += 1) streaks.push(new EnergyStreak());
-
-  // --- Faded, slow rising particles ---
-  const particles = [];
-  class EnergyParticle {
-    constructor() {
-      this.reset();
-    }
-    reset() {
-      this.x = Math.random() * grid.width;
-      this.y = Math.random() * grid.height;
-      this.r = Math.random() * 1.4 + 0.8;
-      this.speed = 0.1 + Math.random() * 0.3;
-      this.color = Math.random() > 0.5 ? '255,208,0' : '155,95,255';
-      this.phase = Math.random() * Math.PI * 2;
-    }
-    update(now) {
-      this.y -= this.speed;
-      this.alpha = Math.sin(now / 1000 + this.phase) * 0.11 + 0.22;
-      if (this.y < -5) {
-        this.reset();
-        this.y = grid.height + 5;
-      }
-    }
-    draw() {
-      const size = this.r * 6;
-      context.globalAlpha = Math.max(this.alpha, 0.05);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 3000 * this.pulseSpeed + this.phase);
+      const alpha = this.baseAlpha * (0.7 + 0.6 * pulse);
+      const size = this.radius * 2;
+      context.globalAlpha = alpha;
       context.globalCompositeOperation = 'lighter';
-      context.drawImage(glowSprite, this.x - size / 2, this.y - size / 2, size, size);
+      context.drawImage(this.sprite, this.x - size / 2, this.y - size / 2, size, size);
       context.globalCompositeOperation = 'source-over';
       context.globalAlpha = 1;
     }
   }
-  for (let i = 0; i < 55; i += 1) particles.push(new EnergyParticle());
+  for (let i = 0; i < 12; i += 1) blobs.push(new EnergyBlob());
 
   // --- Pre-generated twinkling star field ---
   const stars = [];
@@ -303,14 +255,9 @@ function initHeroParticles() {
 
     drawStars(now);
 
-    for (let i = 0; i < particles.length; i += 1) {
-      particles[i].update(now);
-      particles[i].draw();
-    }
-
-    for (let i = 0; i < streaks.length; i += 1) {
-      streaks[i].update();
-      streaks[i].draw(now);
+    for (let i = 0; i < blobs.length; i += 1) {
+      blobs[i].update();
+      blobs[i].draw(now);
     }
   }
 
@@ -689,9 +636,9 @@ gsap.from('.platforms-scroll-wrapper', {
       const counter = { val: 0 };
       gsap.to(counter, {
         val: target,
-        duration: 1.6,
+        duration: 3.2,
         delay: 1.1,
-        ease: 'power2.out',
+        ease: 'sine.inOut',
         onUpdate: function () {
           numEl.textContent = Math.round(counter.val).toLocaleString('en-US') + '+';
         }
