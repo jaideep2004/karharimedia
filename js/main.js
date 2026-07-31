@@ -353,10 +353,11 @@ const allDSPLogos = [
   { name: 'ACRCloud', file: 'acr-cloud.png' }
 ];
 
-// Split into 3 columns
-const col1Data = allDSPLogos.filter((_, i) => i % 3 === 0);
-const col2Data = allDSPLogos.filter((_, i) => i % 3 === 1);
-const col3Data = allDSPLogos.filter((_, i) => i % 3 === 2);
+// Split into 4 columns
+const col1Data = allDSPLogos.filter((_, i) => i % 4 === 0);
+const col2Data = allDSPLogos.filter((_, i) => i % 4 === 1);
+const col3Data = allDSPLogos.filter((_, i) => i % 4 === 2);
+const col4Data = allDSPLogos.filter((_, i) => i % 4 === 3);
 
 function createLogoCards(column, data) {
   data.forEach(logo => {
@@ -364,7 +365,6 @@ function createLogoCards(column, data) {
     card.className = 'platform-logo-card';
     card.innerHTML = `
       <img src="https://cms.karharimedia.com/images/dsp/${logo.file}" alt="${logo.name}">
-      <span>${logo.name}</span>
     `;
     column.appendChild(card);
   });
@@ -373,13 +373,15 @@ function createLogoCards(column, data) {
 const col1 = document.getElementById('scrollColumn1');
 const col2 = document.getElementById('scrollColumn2');
 const col3 = document.getElementById('scrollColumn3');
+const col4 = document.getElementById('scrollColumn4');
 
 createLogoCards(col1, col1Data);
 createLogoCards(col2, col2Data);
 createLogoCards(col3, col3Data);
+createLogoCards(col4, col4Data);
 
 // Duplicate content for seamless scroll
-[col1, col2, col3].forEach(col => {
+[col1, col2, col3, col4].forEach(col => {
   const clone = col.innerHTML;
   col.innerHTML += clone;
 });
@@ -404,6 +406,7 @@ function animateColumn(col, duration, direction) {
 animateColumn(col1, 40, 'up');
 animateColumn(col2, 50, 'down');
 animateColumn(col3, 45, 'up');
+animateColumn(col4, 55, 'down');
 
 // ============================================
 // SECTION SCROLL REVEALS

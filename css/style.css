@@ -47,6 +47,11 @@ img {
   max-width: 100%;
 }
 
+::selection {
+  background: var(--accent);
+  color: #060612;
+}
+
 /* ============================================
    ANIMATED NEBULA BACKGROUND (full page)
    ============================================ */
@@ -168,9 +173,9 @@ body::after {
 }
 
 .nav-container {
-  max-width: 1280px;
+  max-width: 1300px;
   margin: 0 auto;
-  padding: 0 40px;
+  /* padding: 0 40px; */
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -816,12 +821,6 @@ body::after {
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
-  opacity: 0.6;
-  transition: opacity 0.3s;
-}
-
-.ticker-item:hover {
-  opacity: 1;
 }
 
 .ticker-item img {
@@ -953,38 +952,15 @@ body::after {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px 18px;
-  background: rgba(15, 16, 37, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.06);
-  border-radius: 12px;
   flex-shrink: 0;
-  transition: all 0.3s ease;
   cursor: default;
 }
 
-.platform-logo-card:hover {
-  border-color: rgba(255, 215, 0, 0.25);
-  background: rgba(20, 20, 50, 0.8);
-  transform: scale(1.03);
-}
-
 .platform-logo-card img {
-  width: 32px;
-  height: 32px;
+  width: 70px;
+  height: 70px;
   border-radius: 8px;
   object-fit: cover;
-}
-
-.platform-logo-card span {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  white-space: nowrap;
-}
-
-.platform-logo-card:hover span {
-  color: var(--text-primary);
 }
 
 @media (max-width: 860px) {
@@ -1021,6 +997,25 @@ body::after {
   .platform-ticker {
     flex-basis: 58px;
   }
+
+  .platforms-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 0 24px;
+  }
+
+  .platforms-content {
+    position: static;
+    padding-top: 0;
+  }
+
+  .platforms-scroll-wrapper {
+    height: 420px;
+  }
+
+  .all-platforms {
+    padding: clamp(64px, 8vh, 90px) 0 0;
+  }
 }
 
 @media (max-width: 520px) {
@@ -1043,6 +1038,23 @@ body::after {
 
   .orbit-container {
     transform: scale(0.54) rotateX(15deg);
+  }
+
+  .platforms-scroll {
+    gap: 10px;
+  }
+
+  .scroll-column {
+    gap: 10px;
+  }
+
+  .platforms-scroll-wrapper {
+    height: 380px;
+  }
+
+  .platform-logo-card img {
+    width: 56px;
+    height: 56px;
   }
 }
 
